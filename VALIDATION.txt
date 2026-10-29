@@ -1,0 +1,12 @@
+LumaFlow 0.3 validation
+
+64 automated tests passed on Linux / Python 3.12 / Qt offscreen.
+Five mode pages rendered; mode-specific controls and audio/atmosphere previews inspected.
+Tests cover primary colors, near-black threshold, exact brightness-zero packets,
+bright-to-black-to-dim capture-thread transitions, audio spectra/intensity,
+24 effect ranges and variation, v0.2 migration, reconnect, manual disconnect,
+GUI controls, and local WLED HTTP request/response integration.
+
+Not tested here: physical LEDs, Windows BLE/WASAPI/startup, native EXE
+packaging, or frozen OpenRGB helper behavior. No prebuilt Windows EXE included.
+Preview screenshots use labeled simulated inputs.

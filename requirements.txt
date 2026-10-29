@@ -1,0 +1,6 @@
+PySide6-Essentials>=6.8,<7
+bleak>=1.0,<4
+mss>=10,<11
+numpy>=2,<3
+openrgb-python==0.3.8
+PyAudioWPatch>=0.2.12.7,<0.3; sys_platform == 'win32'
