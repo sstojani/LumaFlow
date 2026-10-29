@@ -1,8 +1,14 @@
-# LumaFlow 0.3
+# LumaFlow 0.4.0-rc.1
 
 NBBUFF Sync has become **LumaFlow**: a local Windows lighting studio with
 mode-specific controls, animated previews, and scene/audio-driven brightness.
 Your two NBBUFF bars still display the same color.
+
+This release candidate adds Power Off and Pause/Resume icons, vertical brightness
+controls, responsiveness and stereo-audio fixes, safer settings recovery, and
+versioned Windows builds. See [CHANGELOG.md](CHANGELOG.md) and
+[ACCEPTANCE.md](ACCEPTANCE.md). The original source is preserved at Git tag `v0.3.0`.
+Panel customization is not part of this update.
 
 ## Upgrade and run
 
@@ -10,25 +16,33 @@ Your two NBBUFF bars still display the same color.
    alone may only hide it. The old and new apps intentionally share an instance
    lock so they cannot compete for the Bluetooth controller.
 2. Extract this archive into a new, permanent folder. Run **Start.cmd**.
-3. Your v0.2 device list, verified profiles, manual disconnects and preferences
-   are imported automatically on first use. The original settings file is left
-   untouched. New settings live at `%LOCALAPPDATA%\LumaFlow\settings.json`.
+3. Your existing device list, verified profiles, manual disconnects and preferences
+   are retained. Legacy v0.2 settings are imported on first use. Before upgrading
+   current v0.3 settings, a `settings-v3.before-v4.json` rollback copy is kept.
+   Settings live at `%LOCALAPPDATA%\LumaFlow\settings.json`.
 4. Choose a mode in Studio. Only that mode's controls appear below it. They apply
    immediately and are saved automatically.
 5. If you used Windows startup, enable it again in the new app's Settings. This
    replaces the old startup destination with LumaFlow's new location. The existing
    registry value name is retained to avoid duplicate startup entries.
 
-This download contains source, assets, and Windows EXE build scripts. It does not
-contain a prebuilt Windows EXE. Python 3.13 64-bit is the suggested build/runtime
-version. First-time setup requires internet access to install packages.
+The repository contains source, assets, tests, and Windows build scripts. Local EXE
+builds and versioned ZIPs are written to `dist` and are excluded from Git. Python
+3.14 64-bit is the validated local build/runtime version. First-time source setup
+requires internet access to install packages. Packaged recipients do not need Python.
+
+Every source revision has a content ID; every packaged build also has a unique UTC
+build stamp. Find the version and short ID in the sidebar and the full Build ID in
+Diagnostics and `BUILD-ID.txt` beside the EXE. Settings schema numbers are separate
+from application release versions.
 
 ## The four modes
 
 ### Solid color
 
-Pick a preset or custom color and set its brightness. These controls appear only
-while Solid is selected. The glowing orb has gentle decorative motion; the lights
+Pick a preset or custom color and set brightness with the vertical control beside
+the preview. Drag, scroll, or use arrow keys; Home/End select the limits. Brightness
+is remembered separately for each mode. The glowing orb has gentle decorative motion; the lights
 remain steady. Pure red, green and blue presets use only that color channel.
 
 ### Screen mirror
@@ -78,8 +92,10 @@ Increase Music sensitivity for quiet tracks; decrease it if intensity stays at
 maximum. Silence cutoff is a relative control for rejecting low-level noise.
 Color softness and brightness response are independent.
 
-Restart Music after changing Windows audio devices. Microphone mode needs Windows
-microphone permission for desktop apps. The preview is a signal visualization,
+During Music, default-device changes are checked approximately every two seconds.
+Capture failures request zero output and retry automatically with bounded backoff;
+Retry source now retries immediately. Microphone mode needs Windows microphone
+permission for desktop apps. The preview is a signal visualization,
 not physical feedback from the LEDs.
 
 ### Atmosphere
@@ -104,6 +120,16 @@ can disable decorative motion. Audio spectrum bars still reflect live sound.
 Pause stops capture and transmission, leaving the LEDs at their last color.
 Its preview shows a paused state. Brightness changes apply when a mode is active.
 All four mode brightness limits are remembered separately.
+
+The top-right Pause icon becomes Resume when paused. The Power icon requests black
+and zero brightness while keeping the app connected and capture stopped. Press
+Power again to resume the last active mode and its brightness. Off is preserved on
+restart and sent again after reconnection; manually disconnected devices stay
+disconnected. Status counts completed transport writes, not physical LED readback.
+The protocol does not provide a verified hardware power switch.
+
+Continuous controls apply live using the newest pending value. Disk saves are
+debounced by 250 ms and flushed on Quit, avoiding slider backlogs and redundant writes.
 
 Enabled devices reconnect when the app launches. Manual Disconnect persists
 across relaunches. Forget removes a saved device. Temporary failures use bounded
@@ -138,13 +164,14 @@ replaced while syncing; reconnect after editing the segment layout.
 On Windows, run **Build-EXE.cmd**. It creates:
 
 - `dist\LumaFlow\LumaFlow.exe`, with the new wave icon.
-- `dist\LumaFlow-Windows.zip`, containing the full app folder.
+- A uniquely versioned `LumaFlow-Windows-<build-id>.zip` in `dist`, containing the full app folder.
 
 Share that generated ZIP. Recipients do not need Python, but must keep the entire
-folder together. The download you are reading now is the source/build package;
-its Windows build has not been executed in this Linux development workspace.
-A manual GitHub Actions Windows build workflow is included for a repository with
-these files at its root. No remote workflow was run.
+folder together. The shared local/CI build script runs regression tests, stamps a
+Build ID, builds the Windows EXE, renders an isolated GUI smoke test, and verifies
+the windowed OpenRGB helper's anonymous pipes. CI runs on pushes, pull requests,
+and manual dispatch using pinned dependencies. Hardware and clean-machine
+acceptance remain separate.
 
 The icon is an original code-native two-wave mark, matching the preview style.
 `make_icon.py` regenerates its PNG and ICO files from the same Qt paths used by
@@ -171,8 +198,10 @@ the running app. Keep dependency license files when distributing a built app.
   If native brightness fails, use RGB only and reverify colors. If the hardware
   brightness was previously set to zero, restore it with the remote first.
 - No vendor cloud, sign-in, telemetry, audio/video recording, autoupdater or signed
-  installer. Diagnostics include local addresses, names and error logs; review
-  before sharing. No personal device data is bundled in this project.
+  installer. Diagnostics hide saved device identifiers by default; review before
+  sharing. You can opt into a full export in Diagnostics. Local rotating logs live
+  in `%LOCALAPPDATA%\LumaFlow\logs`; they may contain connection details and paths.
+  No personal device data is bundled in this project.
 - Preview images in `previews/` are explicitly labeled demonstrations using
   simulated input. They are not evidence of a connected light or live microphone.
 

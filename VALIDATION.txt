@@ -1,4 +1,21 @@
-LumaFlow 0.3 validation
+LumaFlow 0.4.0-rc.1 validation — 29 October 2026
+
+86 automated tests passed on Windows / Python 3.14.7 / Qt offscreen.
+Added coverage for opposite-phase stereo, single-channel audio, typed settings
+recovery, rollback backups, future-schema protection, latest-value settings,
+debounced saves and quit flush, Off/reconnect, manual disconnect, explicit Retry,
+pause/resume, vertical-slider input, source recovery, and diagnostic redaction.
+
+Source GUI smoke check passed: all six modes rendered, mode-specific controls,
+brightness save, pause/resume, Off/on, and 900x620 Studio without horizontal scrolling.
+Offscreen rendering explicitly loads installed Segoe UI for visual inspection.
+
+Packaged EXE validation is performed by build_release.py and recorded under
+review-output/packaged. Physical LEDs, real audio-device changes, real startup,
+real WLED/OpenRGB output, clean-machine acceptance and a long run still require
+the checks in ACCEPTANCE.md. No hardware acceptance is claimed here.
+
+Historical LumaFlow 0.3 validation
 
 64 automated tests passed on Linux / Python 3.12 / Qt offscreen.
 Five mode pages rendered; mode-specific controls and audio/atmosphere previews inspected.

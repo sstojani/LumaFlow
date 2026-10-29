@@ -76,8 +76,8 @@ def test_v2_migration_retains_device_and_caps(tmp_path,monkeypatch):
     import json
     monkeypatch.setenv('LOCALAPPDATA',str(tmp_path))
     old=tmp_path/'NBBUFF Sync';old.mkdir()
-    original={'version':2,'brightness':42,'devices':[{'id':'one','kind':'ble','name':'Bars','address':'xx','enabled':False,'verified':True}]}
+    original={'version':2,'brightness':42,'devices':[{'id':'one','kind':'ble','name':'Bars','address':'AA:BB:CC:DD:EE:01','enabled':False,'verified':True}]}
     (old/'settings-v2.json').write_text(json.dumps(original))
     s=Store();assert s.data['screen_brightness']==42 and not s.data['devices'][0]['enabled']
-    s.save();assert Store().data['devices']==original['devices']
+    s.save();assert all(Store().data['devices'][0][k]==v for k,v in original['devices'][0].items())
     assert json.loads((old/'settings-v2.json').read_text())==original

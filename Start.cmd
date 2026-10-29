@@ -22,7 +22,7 @@ exit /b 0
 :fail
  echo.
  echo Setup or launch failed. The error is shown above.
- echo Install 64-bit Python 3.13 with Add Python to PATH enabled.
- echo If upgrading from v0.1, extract v0.3 into its own folder.
+ echo Install 64-bit Python 3.14 with Add Python to PATH enabled.
+ echo Keep each app version in its own permanent folder.
  pause
  exit /b 1

@@ -21,7 +21,7 @@ def startup_enabled():
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER,KEY) as key:
             value,_=winreg.QueryValueEx(key,NAME)
         return value==startup_command()
-    except FileNotFoundError:return False
+    except OSError:return False
 
 def set_startup(enabled):
     if sys.platform!='win32':raise RuntimeError('Launch at sign-in is available on Windows only.')

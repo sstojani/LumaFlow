@@ -39,10 +39,14 @@ class LivePreview(QWidget):
         elif self.mode=='Music':self.music(p,w,h,c)
         elif self.mode=='Atmosphere':self.flow(p,w,h,c)
         elif self.mode=='Solid':self.solid(p,w,h,c)
+        elif self.mode=='Off':
+            from controls import draw_symbol
+            draw_symbol(p,'power',QRectF(w/2-27,65,54,54),'#9af5d4')
+            self.text(p,w,155,'Lights off requested. Your settings are remembered.')
         else:
             p.drawPixmap(int(w/2-36),60,72,72,logo(144));self.text(p,w,155,'Take a breath. Your lights are holding their last color.')
         captions={'Screen':'SCREEN MIRROR  /  SHARED COLOR','Music':'LIVE AUDIO SPECTRUM',
-                  'Solid':'SOLID COLOR  /  '+QColor(*self.rgb).name().upper(),'Atmosphere':self.effect.upper(),'Paused':'PAUSED'}
+                  'Solid':'SOLID COLOR  /  '+QColor(*self.rgb).name().upper(),'Atmosphere':self.effect.upper(),'Paused':'PAUSED','Off':'ZERO OUTPUT  /  CONNECTED DEVICES'}
         self.text(p,w,h-27,captions[self.mode],small=True)
     def text(self,p,w,y,text,small=False):
         p.setPen(QColor('#9cabcb'));p.setFont(QFont('Segoe UI',9 if small else 11))

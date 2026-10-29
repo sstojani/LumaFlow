@@ -1,0 +1,31 @@
+# Windows build/test environment validated for the 0.4.0 release candidate.
+# Python 3.14 x64; application/runtime versions and transitive packages are pinned.
+altgraph==0.17.5
+bleak==3.0.2
+colorama==0.4.6
+iniconfig==2.3.1
+mss==10.2.0
+numpy==2.5.4
+openrgb-python==0.3.8
+packaging==26.3
+pefile==2024.8.26
+pluggy==1.7.0
+PyAudioWPatch==0.2.12.9; sys_platform == 'win32'
+Pygments==2.21.0
+pyinstaller==6.22.3
+pyinstaller-hooks-contrib==2026.9
+PySide6_Essentials==6.12.0
+pytest==9.2.0
+pywin32-ctypes==0.2.3; sys_platform == 'win32'
+setuptools==84.2.1
+shiboken6==6.12.0
+typing_extensions==4.16.0
+winrt-runtime==4.0.3; sys_platform == 'win32'
+winrt-Windows.Devices.Bluetooth==4!10.0.28000.2705; sys_platform == 'win32'
+winrt-Windows.Devices.Bluetooth.Advertisement==4!10.0.28000.2705; sys_platform == 'win32'
+winrt-Windows.Devices.Bluetooth.GenericAttributeProfile==4!10.0.28000.2705; sys_platform == 'win32'
+winrt-Windows.Devices.Enumeration==4!10.0.28000.2705; sys_platform == 'win32'
+winrt-Windows.Devices.Radios==4!10.0.28000.2705; sys_platform == 'win32'
+winrt-Windows.Foundation==4!10.0.28000.2705; sys_platform == 'win32'
+winrt-Windows.Foundation.Collections==4!10.0.28000.2705; sys_platform == 'win32'
+winrt-Windows.Storage.Streams==4!10.0.28000.2705; sys_platform == 'win32'

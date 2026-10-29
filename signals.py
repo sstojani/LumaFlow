@@ -72,11 +72,17 @@ def screen_signal(frame,s,was_dark=False):
 
 def audio_signal(samples,rate,gain=8,gate=.0015):
     if samples is None or samples.size==0:return (0,0,0),0.,(0.,)*32
-    x=samples.mean(axis=1) if samples.ndim==2 else samples
-    x=np.nan_to_num(x);rms=float(np.sqrt(np.mean(x*x)))
+    # Measure energy before mixing channels: antiphase stereo is audible, not silence.
+    x=np.asarray(samples,dtype=float)
+    x=np.nan_to_num(x,nan=0.,posinf=0.,neginf=0.)
+    x=np.clip(x,-1.,1.)
+    rms=float(np.sqrt(np.mean(x*x)))
     if rms<=gate:return (0,0,0),0.,(0.,)*32
     f=np.fft.rfftfreq(len(x),1/rate)
-    a=np.abs(np.fft.rfft(x*np.hanning(len(x))))*2/max(1,len(x))
+    window=np.hanning(len(x))
+    if x.ndim==2:
+        a=np.abs(np.fft.rfft(x*window[:,None],axis=0)).mean(axis=1)*2/max(1,len(x))
+    else:a=np.abs(np.fft.rfft(x*window))*2/max(1,len(x))
     edges=np.geomspace(35,min(16000,rate/2),33)
     bars=tuple(min(1,float(a[(f>=lo)&(f<hi)].sum())*gain*2) for lo,hi in zip(edges[:-1],edges[1:]))
     bands=[float(a[(f>=lo)&(f<hi)].sum()) for lo,hi in [(30,250),(250,2000),(2000,16000)]]

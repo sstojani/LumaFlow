@@ -13,6 +13,12 @@ QPushButton:hover { background: #324463; border-color: #718dce; }
 QPushButton:pressed { background: #405987; }
 QPushButton:checked, QPushButton#primary { background: #9af5d4; color: #0d2b25; border: 1px solid #9af5d4; }
 QPushButton:disabled { color: #6b778c; background: #1b2230; border-color: #2a3345; }
+QPushButton#iconButton, QPushButton#powerButton { border-radius: 15px; padding: 0; background: #202c3d; }
+QPushButton#iconButton:checked { background: #9af5d4; border-color: #9af5d4; }
+QPushButton#powerButton:checked { background: #382632; border-color: #9d5d6e; }
+QPushButton:focus, QComboBox:focus, QLineEdit:focus, QSpinBox:focus { border: 2px solid #89a8ff; }
+QLabel#brightnessValue { font-size: 25px; font-weight: 600; color: #edf0fa; }
+QWidget#brightnessBox { background: transparent; }
 QPushButton#nav { border: none; text-align: left; background: transparent; padding: 13px 18px; }
 QPushButton#nav:checked { color: #9af5d4; background: #1e3736; }
 QSlider { min-height: 30px; background: transparent; }

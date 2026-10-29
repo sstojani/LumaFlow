@@ -3,10 +3,16 @@ import copy
 import json
 import math
 import os
+import re
+import shutil
+from datetime import datetime
 from pathlib import Path
 import numpy as np
 
-DEFAULTS = dict(version=3, brightness=60, color=[255,80,35], mode='Solid',
+SCHEMA_VERSION = 4
+ACTIVE_MODES = ('Solid','Screen','Music','Atmosphere')
+MODES = (*ACTIVE_MODES,'Paused','Off')
+DEFAULTS = dict(version=SCHEMA_VERSION, brightness=60, color=[255,80,35], mode='Solid',last_active_mode='Solid',
     region='Whole screen', monitor=1, smoothing=100, vivid=True, gain=8,
     audio='Speakers', reconnect=True, resume=False, tray=True, start_hidden=False, devices=[],
     solid_brightness=60,screen_brightness=100,music_brightness=100,atmosphere_brightness=60,
@@ -23,43 +29,104 @@ class Store:
     def __init__(self,path=None):
         self.path=Path(path) if path else data_dir()/'settings.json'
         self.data=copy.deepcopy(DEFAULTS)
-        self.warning=''
+        self.warning='';self.read_only=False
         source=self.path
         legacy=Path(os.environ.get('LOCALAPPDATA',str(Path.home())))/'NBBUFF Sync'/'settings-v2.json'
         if path is None and not source.exists() and legacy.exists():source=legacy
         if source.exists():
             try:
                 raw=json.loads(source.read_text(encoding='utf-8'))
-                if isinstance(raw,dict) and raw.get('version',2)<3:
-                    for mode in ['solid','screen','music','atmosphere']:raw.setdefault(mode+'_brightness',raw.get('brightness',60))
                 if not isinstance(raw,dict): raise ValueError('Expected settings object')
-                self.data.update({k:v for k,v in raw.items() if k in DEFAULTS})
-                self.data['brightness']=max(0,min(100,int(self.data['brightness'])))
-                self.data['smoothing']=max(0,min(600,int(self.data['smoothing'])))
-                self.data['gain']=max(1,min(30,int(self.data['gain'])))
-                self.data['monitor']=max(1,int(self.data['monitor']))
-                for key,low,high in [('solid_brightness',0,100),('screen_brightness',0,100),('music_brightness',0,100),('atmosphere_brightness',0,100),('saturation',0,250),('black_threshold',0,12),('exposure',25,200),('screen_gamma',50,200),('screen_response',0,300),('music_response',0,300),('music_smoothing',0,300),('noise_gate',0,60),('cycle_seconds',2,60)]:
-                    self.data[key]=max(low,min(high,int(self.data[key])))
-                from effects import EFFECTS
-                if self.data['effect'] not in EFFECTS:self.data['effect']=EFFECTS[0]
-                rgb_packet(self.data['color'])
-                if self.data['mode'] not in ['Solid','Screen','Music','Atmosphere','Paused']: raise ValueError('Unknown mode')
-                if not isinstance(self.data['devices'],list): raise ValueError('Invalid devices')
-                ids=set()
-                for d in self.data['devices']:
-                    if d['kind'] not in ['ble','wled','openrgb'] or d['id'] in ids: raise ValueError('Invalid device')
-                    ids.add(d['id'])
-                    str(d['address']); str(d['name'])
+                version=raw.get('version',2)
+                if type(version) is int and version>SCHEMA_VERSION:self.read_only=True
+                if type(version) is not int or version>SCHEMA_VERSION:raise ValueError('Unsupported settings version')
+                if source==self.path and version<SCHEMA_VERSION:
+                    rollback=self.path.with_name(f'settings-v{version}.before-v{SCHEMA_VERSION}.json')
+                    if not rollback.exists():shutil.copy2(source,rollback)
+                if version<3:
+                    for mode in ACTIVE_MODES:raw.setdefault(mode.lower()+'_brightness',raw.get('brightness',60))
+                self.data,problems=validate_settings(raw)
+                if problems:
+                    try:backup=self.backup(source)
+                    except OSError:backup=source
+                    self.warning=f'Recovered invalid settings ({", ".join(problems)}). Original kept at {backup}.'
             except Exception as e:
-                self.warning=f'Settings could not be loaded ({e}). Original file kept as settings-v2.invalid.json.'
-                if source==self.path:self.path.replace(self.path.with_name('settings-v2.invalid.json'))
+                try:backup=self.backup(source)
+                except OSError:backup=source
+                self.warning=f'Settings could not be loaded ({e}). Original kept at {backup}.'
                 self.data=copy.deepcopy(DEFAULTS)
+                # Never silently start capture after recovering damaged settings.
+                self.data['mode']='Paused'
+    @staticmethod
+    def backup(source):
+        backup=source.with_name('settings-v2.invalid.json')
+        if backup.exists():backup=source.with_name('settings-'+datetime.now().strftime('%Y%m%d-%H%M%S-%f')+'.invalid.json')
+        shutil.copy2(source,backup)
+        return backup
     def save(self):
+        if self.read_only:raise RuntimeError('Settings belong to a newer LumaFlow version; they were left unchanged.')
         self.path.parent.mkdir(parents=True,exist_ok=True)
-        self.data['version']=3
+        self.data['version']=SCHEMA_VERSION
         tmp=self.path.with_suffix('.tmp')
         tmp.write_text(json.dumps(self.data,indent=2),encoding='utf-8')
         os.replace(tmp,self.path)
+
+
+def validate_settings(raw):
+    """Recover fields independently; malformed opt-outs must never become opt-ins."""
+    from effects import EFFECTS
+    data=copy.deepcopy(DEFAULTS);problems=[]
+    def boolean(key,value,default):
+        if type(value) is bool:return value
+        problems.append(key)
+        if isinstance(value,str) and value.lower()=='false':return False
+        return default
+    ranges={'brightness':(0,100),'smoothing':(0,600),'gain':(1,30),'monitor':(1,64),
+        'solid_brightness':(0,100),'screen_brightness':(0,100),'music_brightness':(0,100),
+        'atmosphere_brightness':(0,100),'saturation':(0,250),'black_threshold':(0,12),
+        'exposure':(25,200),'screen_gamma':(50,200),'screen_response':(0,300),
+        'music_response':(0,300),'music_smoothing':(0,300),'noise_gate':(0,60),'cycle_seconds':(2,60)}
+    enums={'mode':MODES,'last_active_mode':ACTIVE_MODES,'region':('Whole screen','Left edge','Right edge','Top edge'),
+        'audio':('Speakers','Microphone'),'effect':EFFECTS}
+    for key,default in DEFAULTS.items():
+        if key not in raw or key in ('devices','version'):continue
+        value=raw[key]
+        if type(default) is bool:
+            data[key]=boolean(key,value,False if key in ('resume','reconnect') else default)
+        elif key in ranges:
+            lo,hi=ranges[key]
+            if type(value) is int:data[key]=max(lo,min(hi,value))
+            if type(value) is not int or not lo<=value<=hi:problems.append(key)
+        elif key in enums:
+            if value in enums[key]:data[key]=value
+            else:problems.append(key)
+        elif key=='color':
+            try:rgb_packet(value);data[key]=list(value)
+            except (TypeError,ValueError):problems.append(key)
+    if 'last_active_mode' not in raw and data['mode'] in ACTIVE_MODES:data['last_active_mode']=data['mode']
+    devices=raw.get('devices',[]);ids=set();addresses=set()
+    if not isinstance(devices,list):problems.append('devices');devices=[]
+    for index,device in enumerate(devices):
+        prefix=f'device {index+1}'
+        if not isinstance(device,dict):problems.append(prefix);continue
+        d={k:device.get(k) for k in ('id','kind','name','address')}
+        if (d['kind'] not in ('ble','wled','openrgb') or
+            any(not isinstance(d[k],str) or not d[k].strip() for k in ('id','name','address'))):
+            problems.append(prefix);continue
+        d={k:v.strip() for k,v in d.items()}
+        address_key=(d['kind'],d['address'].lower())
+        if d['id'] in ids or address_key in addresses:problems.append(prefix);continue
+        if d['kind']=='ble' and not re.fullmatch(r'(?:[0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}',d['address']):
+            problems.append(prefix+' address');continue
+        if d['kind']=='wled' and not re.fullmatch(r'[a-zA-Z0-9.-]+(?::[0-9]{1,5})?',d['address']):
+            problems.append(prefix+' address');continue
+        d['enabled']=boolean(prefix+' enabled',device['enabled'],False) if 'enabled' in device else True
+        d['verified']=boolean(prefix+' verified',device['verified'],False) if 'verified' in device else False
+        d['profile']=device.get('profile','RGB only')
+        if d['profile'] not in ('MELK','BLEDOB','RGB only'):
+            d['profile']='RGB only';d['verified']=False;problems.append(prefix+' profile')
+        ids.add(d['id']);addresses.add(address_key);data['devices'].append(d)
+    return data,list(dict.fromkeys(problems))
 
 def rgb_packet(rgb):
     if len(rgb)!=3 or any(type(v) is not int or not 0<=v<=255 for v in rgb):

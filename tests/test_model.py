@@ -32,7 +32,7 @@ def test_smoothing_time_invariant():
     assert a==pytest.approx(b)
 
 def test_settings_remember_disconnect(tmp_path):
-    store=Store(tmp_path/'settings.json');store.data['devices']=[dict(id='a',kind='ble',address='x',name='Bars',enabled=False,verified=True)]
+    store=Store(tmp_path/'settings.json');store.data['devices']=[dict(id='a',kind='ble',address='AA:BB:CC:DD:EE:01',name='Bars',enabled=False,verified=True)]
     store.data['brightness']=24;store.save();reloaded=Store(store.path)
     assert reloaded.data['devices'][0]['enabled'] is False
     assert reloaded.data['brightness']==24

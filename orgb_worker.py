@@ -20,7 +20,10 @@ def run():
         for line in sys.stdin:
             try:
                 cmd=json.loads(line)
-                if cmd['op']=='connect':
+                if cmd['op']=='ping':
+                    from version import build_info
+                    print(json.dumps({'ok':True,'build':build_info()}),flush=True);continue
+                elif cmd['op']=='connect':
                     from openrgb import OpenRGBClient
                     client=OpenRGBClient(address='127.0.0.1',port=6742,name='LumaFlow')
                     matches=[d for d in client.devices if d.name==cmd['name']]
@@ -32,6 +35,7 @@ def run():
                 elif cmd['op']=='color':
                     from openrgb.utils import RGBColor
                     device.set_color(RGBColor(*cmd['rgb']),fast=True)
+                else:raise ValueError('Unknown OpenRGB helper operation')
                 print(json.dumps({'ok':True}),flush=True)
             except Exception as e:print(json.dumps({'error':str(e)}),flush=True)
     finally:
