@@ -8,9 +8,9 @@ from pathlib import Path
 from PySide6.QtCore import Qt,QTimer,QLockFile
 from PySide6.QtGui import QColor,QIcon,QPainter,QPixmap,QLinearGradient,QFont
 from PySide6.QtWidgets import (QApplication,QMainWindow,QWidget,QFrame,QVBoxLayout,QHBoxLayout,
-    QLabel,QPushButton,QStackedWidget,QSlider,QComboBox,QColorDialog,QListWidget,QListWidgetItem,
+    QLabel,QPushButton,QStackedWidget,QColorDialog,QListWidget,QListWidgetItem,
     QDialog,QDialogButtonBox,QLineEdit,QFormLayout,QMessageBox,QSystemTrayIcon,QMenu,
-    QFileDialog,QPlainTextEdit,QScrollArea,QSpinBox,QAbstractButton,QGridLayout)
+    QFileDialog,QPlainTextEdit,QScrollArea,QAbstractButton,QGridLayout)
 from model import Store,data_dir,scale,ACTIVE_MODES
 from signals import cap_for
 from visuals import LivePreview,icon,logo
@@ -18,7 +18,7 @@ from effects import EFFECTS
 from engine import Engine
 from windows import startup_enabled,set_startup
 from theme import STYLE
-from controls import BrightnessSlider,IconButton
+from controls import BrightnessSlider,IconButton,ScrollSafeSlider,ScrollSafeComboBox,PageScrollArea
 from version import APP_VERSION,build_info
 from diagnostics import export_payload,configure_logging
 import logging
@@ -55,7 +55,7 @@ class AddDialog(QDialog):
         v=QVBoxLayout(self);v.setContentsMargins(24,24,24,24);v.setSpacing(14)
         v.addWidget(label('Add a light','title'))
         v.addWidget(label('Choose an integration. Devices stay on your local network.','subtitle'))
-        self.kind=QComboBox();self.kind.addItems(['Bluetooth · ELK / MELK','Wi-Fi · WLED','Wired / PC · OpenRGB'])
+        self.kind=ScrollSafeComboBox();self.kind.addItems(['Bluetooth · ELK / MELK','Wi-Fi · WLED','Wired / PC · OpenRGB'])
         v.addWidget(self.kind)
         self.hint=label('Turn on your bars and close their phone app. Scan, then select your controller.','subtitle');v.addWidget(self.hint)
         self.scan_btn=button('Scan nearby Bluetooth lights',self.scan);v.addWidget(self.scan_btn)
@@ -63,7 +63,7 @@ class AddDialog(QDialog):
         form=QFormLayout();v.addLayout(form)
         self.name=QLineEdit();self.name.setPlaceholderText('e.g. Desk light bars');form.addRow('Name',self.name)
         self.address=QLineEdit();self.address.setPlaceholderText('Select a Bluetooth result above');form.addRow('Address / device name',self.address)
-        self.profile=QComboBox();self.profile.addItems(['MELK','BLEDOB','RGB only']);form.addRow('Bluetooth profile',self.profile)
+        self.profile=ScrollSafeComboBox();self.profile.addItems(['MELK','BLEDOB','RGB only']);form.addRow('Bluetooth profile',self.profile)
         self.note=label('MELK uses native brightness. Use RGB only if the brightness command is not supported.','subtitle');v.addWidget(self.note)
         buttons=QDialogButtonBox(QDialogButtonBox.Save|QDialogButtonBox.Cancel);v.addWidget(buttons)
         buttons.accepted.connect(self.save);buttons.rejected.connect(self.reject)
@@ -147,7 +147,7 @@ class Window(QMainWindow):
         if self.store.warning:self.log(self.store.warning)
     def page(self,eyebrow,title,subtitle):
         page=QWidget();outer=QVBoxLayout(page);outer.setContentsMargins(0,0,0,0)
-        scroll=QScrollArea();scroll.setWidgetResizable(True);outer.addWidget(scroll)
+        scroll=PageScrollArea();scroll.setWidgetResizable(True);outer.addWidget(scroll)
         content=QWidget();scroll.setWidget(content);v=QVBoxLayout(content);v.setContentsMargins(32,30,32,24);v.setSpacing(18)
         v.addWidget(label(eyebrow,'eyebrow'));v.addWidget(label(title,'title'));v.addWidget(label(subtitle,'subtitle'))
         self.stack.addWidget(page);return v
@@ -191,9 +191,9 @@ class Window(QMainWindow):
                 colorrow.addStretch();colorrow.addWidget(button('Custom color…',self.choose_color));layout.addLayout(colorrow)
                 layout.addWidget(label('A steady light. The preview orb gently moves; your LEDs keep a constant color.','subtitle'))
             elif mode=='Screen':
-                row=QHBoxLayout();row.addWidget(label('Sample from','subtitle'));self.region=QComboBox();self.region.addItems(['Whole screen','Left edge','Right edge','Top edge']);self.region.setCurrentText(self.s['region']);self.region.currentTextChanged.connect(lambda x:self.change('region',x));row.addWidget(self.region,1)
+                row=QHBoxLayout();row.addWidget(label('Sample from','subtitle'));self.region=ScrollSafeComboBox();self.region.addItems(['Whole screen','Left edge','Right edge','Top edge']);self.region.setCurrentText(self.s['region']);self.region.currentTextChanged.connect(lambda x:self.change('region',x));row.addWidget(self.region,1)
                 layout.addLayout(row)
-                displays=QHBoxLayout();displays.addWidget(label('Display','subtitle'));self.monitor=QComboBox()
+                displays=QHBoxLayout();displays.addWidget(label('Display','subtitle'));self.monitor=ScrollSafeComboBox()
                 self.monitor.setAccessibleName('Screen capture display');self.monitor.addItem(f'Display {self.s["monitor"]}',self.s['monitor'])
                 self.monitor.currentIndexChanged.connect(lambda index:self.change('monitor',self.monitor.itemData(index)) if index>=0 else None)
                 displays.addWidget(self.monitor,1);displays.addWidget(button('Refresh',lambda:self.engine.submit('list_displays')));layout.addLayout(displays)
@@ -208,7 +208,7 @@ class Window(QMainWindow):
                 self.slider(layout,'Color transition softness',self.s['smoothing'],0,600,lambda x:self.change('smoothing',x),' ms')
                 self.slider(layout,'Brightness response',self.s['screen_response'],0,300,lambda x:self.change('screen_response',x),' ms')
             elif mode=='Music':
-                row=QHBoxLayout();row.addWidget(label('Listen to','subtitle'));combo=QComboBox();combo.addItems(['Speakers','Microphone']);combo.setCurrentText(self.s['audio']);combo.currentTextChanged.connect(lambda x:self.change('audio',x));row.addWidget(combo,1)
+                row=QHBoxLayout();row.addWidget(label('Listen to','subtitle'));combo=ScrollSafeComboBox();combo.addItems(['Speakers','Microphone']);combo.setCurrentText(self.s['audio']);combo.currentTextChanged.connect(lambda x:self.change('audio',x));row.addWidget(combo,1)
                 row.addWidget(button('Refresh audio',lambda:self.engine.submit('retry_source')));layout.addLayout(row)
                 self.slider(layout,'Music sensitivity',self.s['gain'],1,30,lambda x:self.change('gain',x),'×')
                 self.slider(layout,'Silence cutoff',self.s['noise_gate'],0,60,lambda x:self.change('noise_gate',x),'')
@@ -216,13 +216,13 @@ class Window(QMainWindow):
                 self.slider(layout,'Brightness response',self.s['music_response'],0,300,lambda x:self.change('music_response',x),' ms')
                 layout.addWidget(label('The spectrum uses live audio. Louder passages brighten the lights; silence sends exact zero. Raise sensitivity for quiet music, or lower it if brightness stays at maximum.','subtitle'))
             else:
-                row=QHBoxLayout();row.addWidget(label('Effect','subtitle'));self.effect=QComboBox();self.effect.addItems(EFFECTS);self.effect.setCurrentText(self.s['effect']);self.effect.currentTextChanged.connect(lambda x:self.change('effect',x));row.addWidget(self.effect,1);layout.addLayout(row)
+                row=QHBoxLayout();row.addWidget(label('Effect','subtitle'));self.effect=ScrollSafeComboBox();self.effect.addItems(EFFECTS);self.effect.setCurrentText(self.s['effect']);self.effect.currentTextChanged.connect(lambda x:self.change('effect',x));row.addWidget(self.effect,1);layout.addLayout(row)
                 self.slider(layout,'Cycle duration · shorter is faster',self.s['cycle_seconds'],2,60,lambda x:self.change('cycle_seconds',x),' s')
                 layout.addWidget(label('24 effects generated by LumaFlow. Rainbow, aurora, candlelight, breathing, police colors and more. Both bars share one evolving color.','subtitle'))
         self.banner=label('Add your light bars in Devices to get started.','subtitle');v.addWidget(self.banner);v.addStretch()
     def slider(self,layout,title,value,lo,hi,fn,suffix):
         row=QHBoxLayout();row.addWidget(label(title));row.addStretch();number=label(str(value)+suffix,'eyebrow');row.addWidget(number);layout.addLayout(row)
-        slider=QSlider(Qt.Horizontal);slider.setRange(lo,hi);slider.setValue(value);slider.setAccessibleName(title)
+        slider=ScrollSafeSlider(Qt.Horizontal);slider.setRange(lo,hi);slider.setValue(value);slider.setAccessibleName(title)
         slider.valueChanged.connect(lambda n:(number.setText(str(n)+suffix),fn(n)));layout.addWidget(slider);return slider
     def toggle_row(self,layout,title,description,checked,fn):
         row=QHBoxLayout();words=QVBoxLayout();words.addWidget(label(title));words.addWidget(label(description,'subtitle'));row.addLayout(words,1)
@@ -339,7 +339,7 @@ class Window(QMainWindow):
             text=label(self.statuses.get(id,'Connecting…' if d.get('enabled',True) else 'Disconnected'),'subtitle');self.device_labels[id]=text;c.addWidget(text)
             c.addWidget(label(f'{d["kind"].upper()}  ·  {d["address"]}','subtitle'))
             if d['kind']=='ble':
-                row=QHBoxLayout();row.addWidget(label('Brightness control','subtitle'));p=QComboBox();p.addItems(['MELK','BLEDOB','RGB only']);p.setCurrentText(d.get('profile','RGB only'));p.currentTextChanged.connect(lambda x,i=id:self.profile_changed(i,x));row.addWidget(p,1);c.addLayout(row)
+                row=QHBoxLayout();row.addWidget(label('Brightness control','subtitle'));p=ScrollSafeComboBox();p.addItems(['MELK','BLEDOB','RGB only']);p.setCurrentText(d.get('profile','RGB only'));p.currentTextChanged.connect(lambda x,i=id:self.profile_changed(i,x));row.addWidget(p,1);c.addLayout(row)
                 if not d.get('verified'):
                     c.addWidget(label('One-time check: do these three colors match on the physical lights?','subtitle'))
                     row=QHBoxLayout()

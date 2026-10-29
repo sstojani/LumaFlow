@@ -1,4 +1,4 @@
-# LumaFlow 0.4.0-rc.1
+# LumaFlow 0.4.0-rc.2
 
 NBBUFF Sync has become **LumaFlow**: a local Windows lighting studio with
 mode-specific controls, animated previews, and scene/audio-driven brightness.
@@ -41,7 +41,7 @@ from application release versions.
 ### Solid color
 
 Pick a preset or custom color and set brightness with the vertical control beside
-the preview. Drag, scroll, or use arrow keys; Home/End select the limits. Brightness
+the preview. Click, drag, or use arrow keys; Home/End select the limits. Brightness
 is remembered separately for each mode. The glowing orb has gentle decorative motion; the lights
 remain steady. Pure red, green and blue presets use only that color channel.
 
@@ -132,6 +132,12 @@ The protocol does not provide a verified hardware power switch.
 Continuous controls apply live using the newest pending value. Disk saves are
 debounced by 250 ms and flushed on Quit, avoiding slider backlogs and redundant writes.
 
+Scrolling over sliders or closed dropdowns scrolls the page without changing their
+values, even when a control was previously focused. Open a dropdown before scrolling
+its list, then choose an option. Sliders accept direct clicking/dragging and keyboard
+input; wheel gestures are reserved for page navigation. Smooth touchpad scrolling
+is supported as well.
+
 Enabled devices reconnect when the app launches. Manual Disconnect persists
 across relaunches. Forget removes a saved device. Temporary failures use bounded
 backoff retries, independently per device, so one slow connection cannot stall
@@ -164,7 +170,7 @@ replaced while syncing; reconnect after editing the segment layout.
 
 On Windows, run **Build-EXE.cmd**. It creates:
 
-- `dist\LumaFlow\LumaFlow.exe`, with the new wave icon.
+- `dist\<version>\LumaFlow\LumaFlow.exe`, with the wave icon. Each version has its own folder.
 - A uniquely versioned `LumaFlow-Windows-<build-id>.zip` in `dist`, containing the full app folder.
 
 Share that generated ZIP. Recipients do not need Python, but must keep the entire

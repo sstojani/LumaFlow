@@ -2,7 +2,34 @@
 import math
 from PySide6.QtCore import Qt,QRectF,QPointF
 from PySide6.QtGui import QColor,QPainter,QPainterPath,QPen
-from PySide6.QtWidgets import QPushButton,QSlider
+from PySide6.QtWidgets import QPushButton,QSlider,QComboBox,QScrollArea
+
+
+class PageScrollArea(QScrollArea):
+    """Preserve smooth touchpad scrolling when child controls ignore wheel input."""
+    def wheelEvent(self,event):
+        delta=event.pixelDelta()
+        if delta.isNull():super().wheelEvent(event);return
+        horizontal=self.horizontalScrollBar();vertical=self.verticalScrollBar()
+        before=(horizontal.value(),vertical.value())
+        horizontal.setValue(horizontal.value()-delta.x());vertical.setValue(vertical.value()-delta.y())
+        event.setAccepted(before!=(horizontal.value(),vertical.value()))
+
+
+class ScrollSafeSlider(QSlider):
+    """Wheel gestures belong to the page; values require direct manipulation."""
+    def __init__(self,*args,**kwargs):
+        super().__init__(*args,**kwargs);self.setFocusPolicy(Qt.StrongFocus)
+    def wheelEvent(self,event):event.ignore()
+
+
+class ScrollSafeComboBox(QComboBox):
+    """A closed dropdown must not change selection while the page scrolls."""
+    def __init__(self,*args,**kwargs):
+        super().__init__(*args,**kwargs);self.setFocusPolicy(Qt.StrongFocus)
+    def wheelEvent(self,event):
+        if self.view().isVisible():super().wheelEvent(event)
+        else:event.ignore()
 
 
 def draw_symbol(p,kind,rect,color):
@@ -37,7 +64,7 @@ class IconButton(QPushButton):
         draw_symbol(p,self.symbol,QRectF(12,12,22,22),color)
 
 
-class BrightnessSlider(QSlider):
+class BrightnessSlider(ScrollSafeSlider):
     """Vertical fill slider; native QSlider retains accessibility and keyboard support."""
     def __init__(self,value,callback):
         super().__init__(Qt.Vertical);self.setRange(0,100);self.setValue(value)
@@ -45,8 +72,8 @@ class BrightnessSlider(QSlider):
         self.setStyleSheet('QSlider { min-height: 166px; max-height: 166px; min-width: 88px; max-width: 88px; background: transparent; }')
         self.setAccessibleName('Maximum brightness');self.setCursor(Qt.PointingHandCursor)
         self.setSingleStep(1);self.setPageStep(10);self.valueChanged.connect(callback)
-        self.valueChanged.connect(lambda value:self.setToolTip(f'Brightness: {value}% — drag, scroll, or use arrow keys'))
-        self.setToolTip(f'Brightness: {value}% — drag, scroll, or use arrow keys')
+        self.valueChanged.connect(lambda value:self.setToolTip(f'Brightness: {value}% — click, drag, or use arrow keys'))
+        self.setToolTip(f'Brightness: {value}% — click, drag, or use arrow keys')
     def track_rect(self):return QRectF(4,4,self.width()-8,self.height()-8)
     def paintEvent(self,event):
         p=QPainter(self);p.setRenderHint(QPainter.Antialiasing);rect=self.track_rect()

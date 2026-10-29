@@ -11,6 +11,7 @@ def run(output):
     try:
         from PySide6.QtWidgets import QApplication,QScrollArea
         from PySide6.QtGui import QFontDatabase
+        from PySide6.QtCore import QPoint
         import os
         from PySide6.QtTest import QTest
         from app import Window
@@ -35,12 +36,23 @@ def run(output):
             w.pause_button.click();assert w.s['mode']=='Solid'
             w.power_button.click();assert w.s['mode']=='Off'
             w.power_button.click();assert w.s['mode']=='Solid'
+            w.set_mode('Screen');app.processEvents()
+            area=w.stack.currentWidget().findChild(QScrollArea)
+            slider=w.brightness_sliders['Screen'];slider.setValue(50)
+            area.ensureWidgetVisible(slider);app.processEvents();position=area.verticalScrollBar().value()
+            QTest.wheelEvent(w.windowHandle(),slider.mapTo(w,slider.rect().center()),QPoint(0,-120))
+            app.processEvents();assert slider.value()==50 and area.verticalScrollBar().value()>position
+            area.ensureWidgetVisible(w.region);w.region.setFocus();app.processEvents()
+            selected=w.region.currentIndex();position=area.verticalScrollBar().value()
+            QTest.wheelEvent(w.windowHandle(),w.region.mapTo(w,w.region.rect().center()),QPoint(),pixelDelta=QPoint(0,-40))
+            app.processEvents();assert w.region.currentIndex()==selected and area.verticalScrollBar().value()>position
+            w.set_mode('Solid');app.processEvents()
             w.resize(900,620);app.processEvents();w.grab().save(str(output/'small-window.png'))
             assert w.brightness_slider.height()==166
             area=w.stack.currentWidget().findChild(QScrollArea)
             assert area.horizontalScrollBar().maximum()==0,'Studio must fit the small window width'
             w.timer.stop();w.save_timer.stop();w.tray.hide();w.hide();w.deleteLater();app.processEvents()
-        result={'ok':True,'build':build_info(),'checks':['six modes rendered','mode controls','debounced save','pause/resume','off/on','small window']}
+        result={'ok':True,'build':build_info(),'checks':['six modes rendered','mode controls','debounced save','pause/resume','off/on','page scroll over controls','touchpad scroll over dropdown','small window']}
     except Exception:
         result['error']=traceback.format_exc()
     (output/'smoke-result.json').write_text(json.dumps(result,indent=2),encoding='utf-8')

@@ -1,4 +1,4 @@
-# LumaFlow 0.4.0-rc.1 — hardware acceptance
+# LumaFlow 0.4.0-rc.2 — hardware acceptance
 
 Automated tests and isolated rendering do not verify what the LEDs physically do.
 Record the Build ID shown in Diagnostics when reporting results.
@@ -6,12 +6,17 @@ Record the Build ID shown in Diagnostics when reporting results.
 ## Run the candidate
 
 1. Quit the previous LumaFlow from its tray menu. Closing its window may only hide it.
-2. Start `dist\LumaFlow\LumaFlow.exe`, or use `Start.cmd` for the current source.
-3. Check that the sidebar shows version `0.4.0-rc.1` and a Build ID.
+2. Start `dist\0.4.0-rc.2\LumaFlow\LumaFlow.exe`, or use `Start.cmd` for the current source.
+3. Check that the sidebar shows version `0.4.0-rc.2` and a Build ID.
 4. In Devices, confirm your saved controller and brightness profile are correct.
    Keep the phone lighting app closed while testing Bluetooth.
 
 ## Observe on the actual bars
+
+- Page scrolling: choose Screen, scroll with the pointer over brightness, an advanced
+  slider, and a closed dropdown. The page should move and values should stay unchanged.
+  Repeat after clicking a control, and with a touchpad if available. Open a dropdown
+  and verify that its list still scrolls and an explicitly selected option applies.
 
 - Solid: red, green, blue, white; brightness 0, 25, 50, 100. Drag the vertical control
   quickly, then check that the final level is applied and retained after restart.

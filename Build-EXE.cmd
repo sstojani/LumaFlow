@@ -8,7 +8,7 @@ if errorlevel 1 goto fail
 .venv\Scripts\python.exe build_release.py
 if errorlevel 1 goto fail
  echo.
- echo SUCCESS: dist\LumaFlow\LumaFlow.exe
+ echo SUCCESS: see dist\VERSION\LumaFlow\LumaFlow.exe for this release.
  echo Share the versioned LumaFlow-Windows ZIP in dist with other Windows users.
  echo Keep the entire extracted folder, not just the EXE.
  pause

@@ -1,5 +1,15 @@
 # Changes
 
+## 0.4.0-rc.2 — prevent accidental changes while scrolling
+
+- Sliders and closed dropdowns pass wheel gestures to the page without changing
+  values, including when they retain keyboard focus from previous interaction.
+- Open dropdown lists retain normal scrolling and explicit selection. Slider
+  clicking, dragging, and keyboard controls remain available.
+- Added smooth pixel scrolling for touchpads and 15 native-window regression cases.
+- Added packaged scrolling checks and separate output folders for each version.
+- Windows EXE version metadata now derives its numeric version from APP_VERSION.
+
 ## 0.4.0-rc.1 — reliability and native controls
 
 - Added top-right Power Off and Pause/Resume icons, with accessible names and tooltips.

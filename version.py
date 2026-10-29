@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 import sys
 
-APP_VERSION='0.4.0-rc.1'
+APP_VERSION='0.4.0-rc.2'
 
 
 def source_digest(root=None):
