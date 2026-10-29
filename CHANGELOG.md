@@ -21,6 +21,8 @@
 - Added semantic version and content/build IDs in the app, diagnostics, and packages.
 - Pinned the Windows build/test environment, aligned local and CI builds, and added
   isolated GUI and OpenRGB helper pipe checks for the packaged EXE.
+- Isolated the build DLL search path to prevent unrelated developer tools from
+  contributing incompatible runtime libraries; added Windows EXE version metadata.
 - Kept panel customization out of this update.
 
 This is a release candidate. Physical BLE/audio and clean-machine acceptance are

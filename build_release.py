@@ -25,23 +25,33 @@ def run():
         'python':sys.version.split()[0],'built_utc':stamp,'packaged':True}
     manifest=ROOT/'build'/'build-info.json';manifest.parent.mkdir(exist_ok=True)
     manifest.write_text(json.dumps(info,indent=2),encoding='utf-8')
-    command=[sys.executable,'-m','PyInstaller','--noconfirm','--onedir','--windowed',
+    # A broad developer PATH can make PyInstaller bundle an unrelated ICU DLL from
+    # another tool (e.g. Poppler), shadowing Windows' ICU and breaking QtCore at startup.
+    windows=Path(os.environ.get('WINDIR','C:/Windows'))
+    build_env={**env,'PATH':os.pathsep.join([str(Path(sys.executable).parent),str(Path(sys.base_prefix)),str(windows/'System32'),str(windows)])}
+    for key in ('PYTHONPATH','PYTHONHOME','QT_PLUGIN_PATH','QT_QPA_PLATFORM_PLUGIN_PATH','QML2_IMPORT_PATH'):
+        build_env.pop(key,None)
+    run_env={**build_env,'PATH':os.pathsep.join([str(windows/'System32'),str(windows)])}
+    resource=ROOT/'build'/'windows-version.txt'
+    resource.write_text("VSVersionInfo(ffi=FixedFileInfo(filevers=(0,4,0,1),prodvers=(0,4,0,1),mask=0x3f,flags=2,OS=0x40004,fileType=1,subtype=0,date=(0,0)),kids=[StringFileInfo([StringTable('040904B0',[StringStruct('FileDescription','LumaFlow lighting studio'),StringStruct('FileVersion',"+repr(APP_VERSION)+"),StringStruct('ProductName','LumaFlow'),StringStruct('ProductVersion',"+repr(APP_VERSION)+"),StringStruct('BuildID',"+repr(build_id)+")])]),VarFileInfo([VarStruct('Translation',[1033,1200])])])",encoding='utf-8')
+    command=[sys.executable,'-m','PyInstaller','--noconfirm','--clean','--onedir','--windowed',
         '--name','LumaFlow','--icon','assets/lumaflow.ico','--hidden-import','orgb_worker',
+        '--version-file',str(resource),
         '--hidden-import','smoke','--add-data',str(manifest)+os.pathsep+'.',
         '--collect-all','bleak','--collect-all','pyaudiowpatch','--collect-all','openrgb',
         '--exclude-module','PySide6.QtWebEngineCore','app.py']
-    subprocess.run(command,cwd=ROOT,check=True)
+    subprocess.run(command,cwd=ROOT,env=build_env,check=True)
     bundle=ROOT/'dist'/'LumaFlow';exe=bundle/'LumaFlow.exe'
     (bundle/'BUILD-ID.txt').write_text(build_id+'\nSource: '+commit+'\n',encoding='utf-8')
     for name in ('LICENSE','README.md','CHANGELOG.md','ACCEPTANCE.md','requirements-build.txt'):
         if (ROOT/name).exists():shutil.copy2(ROOT/name,bundle/name)
     check=ROOT/'review-output'/'packaged'
-    subprocess.run([str(exe),'--smoke-test',str(check)],cwd=ROOT,env=env,check=True,timeout=60)
+    subprocess.run([str(exe),'--smoke-test',str(check)],cwd=ROOT,env=run_env,check=True,timeout=60)
     result=json.loads((check/'smoke-result.json').read_text(encoding='utf-8'))
     if not result.get('ok') or result['build']['build_id']!=build_id:raise RuntimeError('Packaged GUI smoke check failed')
     # Verify anonymous stdio pipes in the windowed OpenRGB helper without a device/server.
     helper=subprocess.run([str(exe),'--openrgb-worker'],input='{"op":"ping"}\n',
-        capture_output=True,text=True,timeout=20,creationflags=0x08000000)
+        capture_output=True,text=True,timeout=20,creationflags=0x08000000,env=run_env)
     reply=json.loads(helper.stdout)
     if helper.returncode or not reply.get('ok') or reply['build']['build_id']!=build_id:
         raise RuntimeError('Packaged OpenRGB helper pipe smoke check failed')

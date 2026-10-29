@@ -55,3 +55,36 @@ def test_source_failure_zeros_output_and_recovers_without_mode_change(monkeypatc
         assert capture.latest.rgb==(0,0,255) and capture.latest.level==1
         assert any(k=='source_recovered' for k,v in events)
     finally:capture.close()
+
+
+def test_default_audio_change_reopens_stream_and_off_releases_it(monkeypatch):
+    device={'index':1};opened=[];instances=[]
+    class Stream:
+        def __init__(self):self.closed=False
+        def is_active(self):return True
+        def stop_stream(self):pass
+        def close(self):self.closed=True
+    class Audio:
+        def __init__(self):self.terminated=False;instances.append(self)
+        def get_default_wasapi_loopback(self):
+            return dict(index=device['index'],defaultSampleRate=48000,maxInputChannels=2,name='Simulated output')
+        def open(self,**kwargs):
+            stream=Stream();opened.append((kwargs['input_device_index'],stream));return stream
+        def terminate(self):self.terminated=True
+    monkeypatch.setitem(sys.modules,'pyaudiowpatch',types.SimpleNamespace(PyAudio=Audio,paFloat32=1,paContinue=0))
+    capture=Capture(lambda *args:None)
+    def wait_for(condition,seconds=3.5):
+        end=time.monotonic()+seconds
+        while not condition() and time.monotonic()<end:time.sleep(.01)
+        assert condition()
+    try:
+        capture.update({**DEFAULTS,'mode':'Music'})
+        wait_for(lambda:len(opened)==1)
+        device['index']=2;wait_for(lambda:len(opened)==2)
+        assert opened[0][0]==1 and opened[0][1].closed and instances[0].terminated
+        assert opened[1][0]==2
+        capture.update({**DEFAULTS,'mode':'Off'})
+        wait_for(lambda:capture.latest.mode=='Off')
+        assert opened[1][1].closed and instances[1].terminated
+        assert capture.latest.level==0
+    finally:capture.close()

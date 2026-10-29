@@ -1,10 +1,11 @@
 LumaFlow 0.4.0-rc.1 validation — 29 October 2026
 
-86 automated tests passed on Windows / Python 3.14.7 / Qt offscreen.
+87 automated tests passed on Windows / Python 3.14.7 / Qt offscreen.
 Added coverage for opposite-phase stereo, single-channel audio, typed settings
 recovery, rollback backups, future-schema protection, latest-value settings,
 debounced saves and quit flush, Off/reconnect, manual disconnect, explicit Retry,
-pause/resume, vertical-slider input, source recovery, and diagnostic redaction.
+pause/resume, vertical-slider input, source recovery, default-audio changes and
+stream release on Off, and diagnostic redaction.
 
 Source GUI smoke check passed: all six modes rendered, mode-specific controls,
 brightness save, pause/resume, Off/on, and 900x620 Studio without horizontal scrolling.
