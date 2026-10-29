@@ -208,7 +208,8 @@ class Window(QMainWindow):
                 self.slider(layout,'Color transition softness',self.s['smoothing'],0,600,lambda x:self.change('smoothing',x),' ms')
                 self.slider(layout,'Brightness response',self.s['screen_response'],0,300,lambda x:self.change('screen_response',x),' ms')
             elif mode=='Music':
-                row=QHBoxLayout();row.addWidget(label('Listen to','subtitle'));combo=QComboBox();combo.addItems(['Speakers','Microphone']);combo.setCurrentText(self.s['audio']);combo.currentTextChanged.connect(lambda x:self.change('audio',x));row.addWidget(combo,1);layout.addLayout(row)
+                row=QHBoxLayout();row.addWidget(label('Listen to','subtitle'));combo=QComboBox();combo.addItems(['Speakers','Microphone']);combo.setCurrentText(self.s['audio']);combo.currentTextChanged.connect(lambda x:self.change('audio',x));row.addWidget(combo,1)
+                row.addWidget(button('Refresh audio',lambda:self.engine.submit('retry_source')));layout.addLayout(row)
                 self.slider(layout,'Music sensitivity',self.s['gain'],1,30,lambda x:self.change('gain',x),'×')
                 self.slider(layout,'Silence cutoff',self.s['noise_gate'],0,60,lambda x:self.change('noise_gate',x),'')
                 self.slider(layout,'Color transition softness',self.s['music_smoothing'],0,300,lambda x:self.change('music_smoothing',x),' ms')

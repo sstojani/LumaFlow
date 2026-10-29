@@ -94,7 +94,8 @@ Color softness and brightness response are independent.
 
 During Music, default-device changes are checked approximately every two seconds.
 Capture failures request zero output and retry automatically with bounded backoff;
-Retry source now retries immediately. Microphone mode needs Windows microphone
+Retry source now retries immediately. Refresh audio reopens capture on demand if
+Windows keeps reporting the previous default device. Microphone mode needs Windows microphone
 permission for desktop apps. The preview is a signal visualization,
 not physical feedback from the LEDs.
 

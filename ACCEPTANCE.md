@@ -29,7 +29,8 @@ Record the Build ID shown in Diagnostics when reporting results.
   cursor and letterboxed video. Confirm blackout and subsequent recovery.
 - Music: quiet, loud, silence; then change the default Windows playback device.
   Check that capture recovers, or that an actionable source error appears. Test the
-  microphone separately if you use it.
+  Refresh audio button if Windows continues reporting the previous device. Test
+  the microphone separately if you use it.
 - Atmosphere: check a color flow and breathing effect, their speed, and brightness.
 - Sleep/wake: check reconnection and capture recovery after Windows resumes.
 - Tray/startup: verify hide, reopen, Quit, optional sign-in startup and optional resume.

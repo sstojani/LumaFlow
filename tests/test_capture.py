@@ -83,8 +83,11 @@ def test_default_audio_change_reopens_stream_and_off_releases_it(monkeypatch):
         device['index']=2;wait_for(lambda:len(opened)==2)
         assert opened[0][0]==1 and opened[0][1].closed and instances[0].terminated
         assert opened[1][0]==2
+        capture.update({**DEFAULTS,'mode':'Music','_source_revision':1})
+        wait_for(lambda:len(opened)==3)
+        assert opened[1][1].closed and instances[1].terminated
         capture.update({**DEFAULTS,'mode':'Off'})
         wait_for(lambda:capture.latest.mode=='Off')
-        assert opened[1][1].closed and instances[1].terminated
+        assert opened[2][1].closed and instances[2].terminated
         assert capture.latest.level==0
     finally:capture.close()

@@ -20,13 +20,19 @@ class Capture:
     def run(self):
         screen=None;pa=None;stream=None;audio_key=None;audio_frame=(0,None);rate=48000
         last=time.monotonic();response=Response();failed_key=None;was_dark=False;phase=0.;last_mode=None
-        retry_at=0.;failures=0;audio_index=None;audio_check=0.
+        retry_at=0.;failures=0;audio_index=None;audio_check=0.;last_revision=0
         try:
             while not self.stop_event.is_set():
                 start=time.monotonic();dt=start-last;last=start
                 with self.lock:s=self.settings.copy()
                 mode=s.get('mode','Paused');key=(mode,s.get('audio'),s.get('monitor'),s.get('_source_revision',0))
                 try:
+                    if s.get('_source_revision',0)!=last_revision:
+                        last_revision=s.get('_source_revision',0)
+                        if screen:screen.close();screen=None
+                        if stream:stream.stop_stream();stream.close();stream=None
+                        if pa:pa.terminate();pa=None
+                        audio_frame=(0,None)
                     if mode!='Screen' and screen:screen.close();screen=None
                     if (mode!='Music' or audio_key!=s.get('audio')) and stream:
                         stream.stop_stream();stream.close();stream=None;pa.terminate();pa=None
@@ -114,7 +120,7 @@ class Engine:
         self.settings={};self.devices={};self.tasks={};self.status={};self.reports={}
         self.tests={};self.test_versions={};self.target=(255,80,35)
         self.capture=Capture(self.emit) if autostart else None
-        self.running=True;self.scan_task=None
+        self.running=True;self.scan_task=None;self.source_revision=0
         self.thread=threading.Thread(target=lambda:asyncio.run(self.run()),daemon=True)
         if autostart:self.thread.start()
     def emit(self,kind,value):
@@ -206,6 +212,7 @@ class Engine:
                 except Exception:pass
             if self.running:await asyncio.sleep(min(30,2**min(attempt,5)))
     async def reconcile(self,settings):
+        settings={**settings,'_source_revision':self.source_revision}
         old_reconnect=self.settings.get('reconnect',True)
         self.settings=settings
         if settings.get('mode')=='Off':self.tests.clear()
@@ -252,7 +259,7 @@ class Engine:
                     elif action=='settings':await self.reconcile(value)
                     elif action=='retry_device':await self.retry_device(value)
                     elif action=='retry_source':
-                        self.settings['_source_revision']=self.settings.get('_source_revision',0)+1
+                        self.source_revision+=1;self.settings['_source_revision']=self.source_revision
                         if self.capture:self.capture.update(self.settings)
                     elif action=='list_displays':asyncio.create_task(self.list_displays())
                     elif action=='scan' and (self.scan_task is None or self.scan_task.done()):self.scan_task=asyncio.create_task(self.scan())
